@@ -66,5 +66,163 @@ def create_ansys_q3d(project_dir: str, project_name: str, NG_MODE: bool = True) 
 
     return q3d
 
-def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str, gds_parameter: list, result_csv_file_path: str) -> list:
+
+'''
+run_ansys_q3d: takes the ansys q3d project object, the path to gds file, the list of gds parameters, result csv file path, 
+try running the simulation in the ansys project object, catch failure of the project, print the error message and return None,
+return the list in form [N, length, width, fgap, ggap, taper, 1_1, 1_2, 1_GND, 2_1, 2_2, 2_GND, GND_1, GND_2, GND_GND]
+'''
+def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str, 
+                  mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> bool:
+    # Set units on the brand new design
+    if not os.path.exists(gds_file_path):
+        print(f'gds path not exist: {gds_file_path}')
+        return None
     
+
+    q3d.modeler.model_units = "um"
+    
+    # 3. GEOMETRY GENERATION
+    chip = q3d.modeler.create_box(origin=[-chip_x/2, -chip_y/2, -chip_z],
+                                  sizes=[chip_x, chip_y, chip_z], 
+                                  name="chip", 
+                                  material="silicon")
+    
+    pec = q3d.modeler.create_rectangle(origin=[-chip_x/2, -chip_y/2, 0],
+                                       orientation="XY",
+                                       sizes=[chip_x, chip_y],
+                                       name="PEC_sheet")
+    
+    # import gds
+    q3d.import_gds_3d(gds_file_path, mapping_layer)
+    
+    pads = []
+    tool_lst = []
+    for obj_name in q3d.modeler.object_names:
+        if 'signal1' in obj_name.lower():
+            pads.append(obj_name)
+        if 'signal2' in obj_name.lower():
+            tool_lst.append(obj_name)
+    
+    q3d.modeler.subtract("PEC_sheet", tool_lst, keep_originals=False)
+    
+    # assign thin conductor to pec parts
+    object_list = pads + ['PEC_sheet']
+    q3d.assign_thin_conductor(object_list, material="pec", thickness=pec_thickness)
+    
+    # assign net
+    q3d.assign_net(['Signal1_3', 'Signal1_7'], "1")
+    q3d.assign_net(['Signal1_5', 'Signal1_8'], "2")
+    q3d.assign_net(pec, "GND")
+    
+    # Setup
+    setup_name = "Setup1"
+    cur_setup = q3d.create_setup(setup_name=setup_name, AdaptiveFreq=5e9, Cap__PerRefine=0.05)
+    cur_setup.capacitance_enabled = True   
+    cur_setup.dc_enabled = False           
+    cur_setup.ac_rl_enabled = False        
+    
+    # Analyze
+    validate = q3d.validate_simple()
+    if validate:
+        # print(f"[{design_run_name}] Validation passed. Starting simulation...")
+        q3d.analyze(cur_setup.name)
+        print('Simulation complete.')
+        q3d.save_project()
+        return True
+    else:
+        print('Validation failed. Please check the model.')
+        q3d.save_project()
+        return False
+    
+
+
+
+def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, result_file_path: str = "simulation_result.csv") -> bool:
+    file_exists = os.path.exists(result_file_path)
+
+    if file_exists: 
+        with open(result_file_path, 'r') as file:
+            first_line = file.readline().split(",")
+            if first_line[:6] != ["N", "length", "width", "fgap", "ggap", "taper"]:
+                print(f"label of {result_file_path} is not desired. ")
+                return False
+        
+    export_file_name = 'current_simulation_result.csv'
+    success = q3d.export_matrix_data(
+        file_name=export_file_name,          
+        problem_type="C",                            
+        sweep="LastAdaptive",           
+        reduce_matrix="Original",       
+        freq="5",                       
+        freq_unit="GHz",                
+        matrix_type="Spice",
+        c_unit="fF"
+    )
+
+    if not success:
+        print("export_matrix_data failed.")
+        return False
+
+
+    matrix_labels = ["1", "2", "GND"]
+    flat_matrix_headers = [f"{r}_{c}" for r in matrix_labels for c in matrix_labels]
+
+    cap_data = 1e-15 * pd.read_csv(
+        export_file_name,
+        header=6,
+        nrows=3,
+        sep="\t",
+        index_col=0,
+        usecols=[0, 1, 2, 3]
+    )
+
+    flat_values = cap_data.to_numpy().flatten()
+    matrix_data_dict = dict(zip(flat_matrix_headers, flat_values))
+
+    param_headers = ["N", "length", "width", "fgap", "ggap", "taper"]
+    param_data_dict = dict(zip(param_headers, simulation_parameters))
+
+    row_dict = {
+        **param_data_dict,
+        **matrix_data_dict
+    }
+
+    sweep_df = pd.DataFrame([row_dict])
+
+    sweep_df.to_csv(
+        result_file_path,
+        mode="a",
+        header=not file_exists,
+        index=False
+    )
+
+    return True
+
+
+'''
+q3d_simulate: takes the ansys project folder path, project name, gds file path, the list of parameters in form [N, length, width, fgap, ggap, taper],
+create_ansys_q3d()
+
+return run_ansys_q3d() 
+
+'''
+
+def q3d_simulate(project_dir, project_name, gds_file_path, gds_parameters, result_file_path, 
+                 NG_MODE: bool = True, 
+                 mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> float:
+    q3d = create_ansys_q3d(project_dir=project_dir, project_name=project_name, NG_MODE=NG_MODE)
+    if q3d == None:
+        print("simulation creation failed")
+        return False
+    
+    run_simulation_success = run_ansys_q3d(q3d=q3d, gds_file_path=gds_file_path, mapping_layer=mapping_layer, chip_x=chip_x, chip_y=chip_y, chip_z=chip_z, pec_thickness=pec_thickness)
+    if not run_simulation_success:
+        q3d.close_desktop()
+        return False
+
+    export_success = export_q3d_result(q3d, simulation_parameters=gds_parameters, result_file_path=result_file_path)
+    if not export_success:
+        q3d.close_desktop()
+        return False
+    return True

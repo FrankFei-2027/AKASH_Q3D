@@ -46,13 +46,13 @@ from gdsfactory.components import bend_euler
 pdk.register_cells(bend_euler=bend_euler)
 
 
-def generate_IDC(cpw_xs, IDC_params):
+def generate_IDC(cpwa, cpwb, IDC_params):
     
     # print(cpw_xs.sections[0].width)
     # print(cpw_xs.sections[1].width)
 
     device = gf.Component()
-    # cpw_xs = CPW(13.5, 8)
+    cpw_xs = CPW(cpwa, cpwb)
     cpw_o = CPW_open(width=cpw_xs.sections[0].width, gap=0.5*(cpw_xs.sections[1].width-cpw_xs.sections[0].width))
     rect1 = device<<  gf.path.extrude(
             gf.path.straight(25), cross_section=cpw_o
