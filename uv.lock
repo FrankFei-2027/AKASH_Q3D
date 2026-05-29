@@ -27,6 +27,7 @@ dependencies = [
     { name = "gdsfactory" },
     { name = "gdstk" },
     { name = "qfab" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
@@ -34,6 +35,7 @@ requires-dist = [
     { name = "gdsfactory", specifier = ">=9.43.0" },
     { name = "gdstk", specifier = ">=1.0.0" },
     { name = "qfab", git = "https://github.com/qnl/qfab.git?branch=gdsfactory9" },
+    { name = "scipy", specifier = ">=1.17.1" },
 ]
 
 [[package]]

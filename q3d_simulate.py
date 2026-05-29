@@ -138,7 +138,7 @@ def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str,
 
 
 
-def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, result_file_path: str = "simulation_result.csv") -> bool:
+def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, result_file_path: str) -> bool:
     file_exists = os.path.exists(result_file_path)
 
     if file_exists: 

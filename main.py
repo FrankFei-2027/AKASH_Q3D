@@ -16,6 +16,10 @@ from scipy.optimize import minimize
 import create_gds
 import q3d_simulate
 
+def loss_function(current_1_2: float, current_1_GND: float, current_2_GND: float, target_1_2: float, target_1_GND: float, target_2_GND: float) -> float: 
+    result = (current_1_2 - target_1_2)**2 + (current_1_GND - target_1_GND)**2 + (current_2_GND - target_2_GND)**2
+    return result
+
 def one_procedure(cpw_parameters, IDC_parameters, project_dir="", project_name="IDC.aedt", result_file_path="all_results.gds"):
     gds_file_path="IDC.gds"
 
@@ -57,10 +61,22 @@ def main():
     if not((len(parameters) == 6)):
         print("number of parameters does not match. ")
         return
+    else:
+        x0 = [float(x) for x in parameters]
+
+    user_cpw = input("Please input the two parameters of cpw and seperate them in space, press enter to use default (default: 13.5 8). ")
+    cpw = user_cpw.split(" ")
+    if len(cpw) == 2:
+        cpw[0] = float(cpw[0])
+        cpw[1] = float(cpw[1])
+    else:
+        print("cpw format unexpected.")
+        return
     
-        
+
+    
     # automization
-    x0 = 
+    
     minimize(one_procedure, x0=x0, args=[cpw], bounds=, constraints=, )
     
 
