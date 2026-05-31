@@ -138,7 +138,8 @@ def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str,
 
 
 
-def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, result_file_path: str) -> bool:
+def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, result_file_path: str) -> list:
+    return_lst = [False]
     file_exists = os.path.exists(result_file_path)
 
     if file_exists: 
@@ -146,7 +147,7 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
             first_line = file.readline().split(",")
             if first_line[:6] != ["N", "length", "width", "fgap", "ggap", "taper"]:
                 print(f"label of {result_file_path} is not desired. ")
-                return False
+                return return_lst
         
     export_file_name = 'current_simulation_result.csv'
     success = q3d.export_matrix_data(
@@ -162,7 +163,7 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
 
     if not success:
         print("export_matrix_data failed.")
-        return False
+        return return_lst
 
 
     matrix_labels = ["1", "2", "GND"]
@@ -182,6 +183,8 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
 
     param_headers = ["N", "length", "width", "fgap", "ggap", "taper"]
     param_data_dict = dict(zip(param_headers, simulation_parameters))
+    capacitance = [matrix_data_dict["1_2"], matrix_data_dict["1_GND"], matrix_data_dict["2_GND"]]
+    
 
     row_dict = {
         **param_data_dict,
@@ -197,7 +200,9 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
         index=False
     )
 
-    return True
+    return_lst.append(capacitance)
+
+    return return_lst
 
 
 '''
@@ -210,19 +215,19 @@ return run_ansys_q3d()
 
 def q3d_simulate(project_dir, project_name, gds_file_path, gds_parameters, result_file_path, 
                  NG_MODE: bool = True, 
-                 mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> float:
+                 mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> list | None:
     q3d = create_ansys_q3d(project_dir=project_dir, project_name=project_name, NG_MODE=NG_MODE)
     if q3d == None:
         print("simulation creation failed")
-        return False
+        return None
     
     run_simulation_success = run_ansys_q3d(q3d=q3d, gds_file_path=gds_file_path, mapping_layer=mapping_layer, chip_x=chip_x, chip_y=chip_y, chip_z=chip_z, pec_thickness=pec_thickness)
     if not run_simulation_success:
         q3d.close_desktop()
-        return False
+        return None
 
     export_success = export_q3d_result(q3d, simulation_parameters=gds_parameters, result_file_path=result_file_path)
-    if not export_success:
+    if not export_success[0]:
         q3d.close_desktop()
-        return False
-    return True
+        return None
+    return export_success[1]
