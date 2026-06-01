@@ -46,13 +46,13 @@ from gdsfactory.components import bend_euler
 pdk.register_cells(bend_euler=bend_euler)
 
 
-def generate_IDC(cpwa, cpwb, IDC_params):
+def generate_IDC(cpw, IDC_params):
     
     # print(cpw_xs.sections[0].width)
     # print(cpw_xs.sections[1].width)
 
     device = gf.Component()
-    cpw_xs = CPW(cpwa, cpwb)
+    cpw_xs = CPW(cpw[0], cpw[1])
     cpw_o = CPW_open(width=cpw_xs.sections[0].width, gap=0.5*(cpw_xs.sections[1].width-cpw_xs.sections[0].width))
     rect1 = device<<  gf.path.extrude(
             gf.path.straight(25), cross_section=cpw_o
@@ -66,6 +66,7 @@ def generate_IDC(cpwa, cpwb, IDC_params):
 
     cpw_len2 = device << gf.path.extrude(cpw_path, cross_section=cpw_xs)
     
+    print(f'from create_gds {IDC_params}') # debug
     IDC_coupler = interdigitated_capacitor(**IDC_params, xsection=cpw_xs)
     IDC_coupler = device << IDC_coupler
 

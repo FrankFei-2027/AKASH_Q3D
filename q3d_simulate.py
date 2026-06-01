@@ -52,12 +52,14 @@ def create_ansys_q3d(project_dir: str, project_name: str, NG_MODE: bool = True) 
     # project_dir = r"C:\Users\dixit\Documents\GitHub\Dual-Rail\Device Design\Q3D sim"
     # project_name = 'IDC_testing.aedt'
     project_path = os.path.join(project_dir, project_name)
-
+    if os.path.exists(project_path):
+        os.remove(project_path)
     # Open/connect to the desktop session and project exactly ONCE globally.
     # This stays alive between simulate_IDC() function calls.
     q3d = ansys.aedt.core.Q3d(
+        version="2022.2",
         non_graphical=NG_MODE,
-        new_desktop=False,
+        new_desktop=True,
         project=project_path
     ) 
     '''
@@ -77,7 +79,7 @@ def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str,
     # Set units on the brand new design
     if not os.path.exists(gds_file_path):
         print(f'gds path not exist: {gds_file_path}')
-        return None
+        return False
     
 
     q3d.modeler.model_units = "um"
@@ -144,7 +146,7 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
 
     if file_exists: 
         with open(result_file_path, 'r') as file:
-            first_line = file.readline().split(",")
+            first_line = file.readline().strip().split(",")
             if first_line[:6] != ["N", "length", "width", "fgap", "ggap", "taper"]:
                 print(f"label of {result_file_path} is not desired. ")
                 return return_lst
@@ -173,7 +175,7 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
         export_file_name,
         header=6,
         nrows=3,
-        sep="\t",
+        sep=",",
         index_col=0,
         usecols=[0, 1, 2, 3]
     )
@@ -201,6 +203,7 @@ def export_q3d_result(q3d: ansys.aedt.core.Q3d, simulation_parameters: list, res
     )
 
     return_lst.append(capacitance)
+    return_lst[0] = True
 
     return return_lst
 
@@ -214,7 +217,7 @@ return run_ansys_q3d()
 '''
 
 def q3d_simulate(project_dir, project_name, gds_file_path, gds_parameters, result_file_path, 
-                 NG_MODE: bool = True, 
+                 NG_MODE: bool = False, 
                  mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> list | None:
     q3d = create_ansys_q3d(project_dir=project_dir, project_name=project_name, NG_MODE=NG_MODE)
     if q3d == None:
@@ -230,4 +233,6 @@ def q3d_simulate(project_dir, project_name, gds_file_path, gds_parameters, resul
     if not export_success[0]:
         q3d.close_desktop()
         return None
+    
+    q3d.close_desktop()
     return export_success[1]

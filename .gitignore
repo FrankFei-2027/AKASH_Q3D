@@ -6,6 +6,10 @@ dist/
 wheels/
 *.egg-info
 .lock
+*.gds
+*.aedt
+*.csv
+batch.log
 
 # Virtual environments
 .venv
