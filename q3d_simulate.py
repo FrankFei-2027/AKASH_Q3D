@@ -57,7 +57,6 @@ def create_ansys_q3d(project_dir: str, project_name: str, NG_MODE: bool = True) 
     # Open/connect to the desktop session and project exactly ONCE globally.
     # This stays alive between simulate_IDC() function calls.
     q3d = ansys.aedt.core.Q3d(
-        version="2022.2",
         non_graphical=NG_MODE,
         new_desktop=True,
         project=project_path
