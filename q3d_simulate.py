@@ -73,6 +73,7 @@ run_ansys_q3d: takes the ansys q3d project object, the path to gds file, the lis
 try running the simulation in the ansys project object, catch failure of the project, print the error message and return None,
 return the list in form [N, length, width, fgap, ggap, taper, 1_1, 1_2, 1_GND, 2_1, 2_2, 2_GND, GND_1, GND_2, GND_GND]
 '''
+'''Mapping layer: 0 is the subtract layer, each layer above it is a capacitor pad'''
 def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str, 
                   mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> bool:
     # Set units on the brand new design
@@ -97,23 +98,26 @@ def run_ansys_q3d(q3d: ansys.aedt.core.Q3d, gds_file_path: str,
     # import gds
     q3d.import_gds_3d(gds_file_path, mapping_layer)
     
-    pads = []
+    pads1 = []
+    pads2 = []
     tool_lst = []
     for obj_name in q3d.modeler.object_names:
         if 'signal1' in obj_name.lower():
-            pads.append(obj_name)
+            pads1.append(obj_name)
         if 'signal2' in obj_name.lower():
+            pads2.append(obj_name)
+        if 'signal0' in obj_name.lower():
             tool_lst.append(obj_name)
     
     q3d.modeler.subtract("PEC_sheet", tool_lst, keep_originals=False)
     
     # assign thin conductor to pec parts
-    object_list = pads + ['PEC_sheet']
+    object_list = pads1 + pads2 + ['PEC_sheet']
     q3d.assign_thin_conductor(object_list, material="pec", thickness=pec_thickness)
     
     # assign net
-    q3d.assign_net(['Signal1_3', 'Signal1_7'], "1")
-    q3d.assign_net(['Signal1_5', 'Signal1_8'], "2")
+    q3d.assign_net(pads1, "1")
+    q3d.assign_net(pads2, "2")
     q3d.assign_net(pec, "GND")
     
     # Setup
@@ -216,8 +220,8 @@ return run_ansys_q3d()
 '''
 
 def q3d_simulate(project_dir, project_name, gds_file_path, gds_parameters, result_file_path, 
-                 NG_MODE: bool = False, 
-                 mapping_layer: dict = {1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> list | None:
+                 NG_MODE: bool = True, 
+                 mapping_layer: dict = {0: (0, 0), 1: (0, 0), 2: (0, 0)}, chip_x: float = 5000, chip_y: float = 5000, chip_z: float = 675, pec_thickness: float = 0.2) -> list | None:
     q3d = create_ansys_q3d(project_dir=project_dir, project_name=project_name, NG_MODE=NG_MODE)
     if q3d == None:
         print("simulation creation failed")

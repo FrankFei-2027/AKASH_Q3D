@@ -38,7 +38,7 @@ dependencies = [
 requires-dist = [
     { name = "gdsfactory", specifier = ">=9.43.0" },
     { name = "gdstk", specifier = ">=1.0.0" },
-    { name = "pyaedt", specifier = "==0.22.0" },
+    { name = "pyaedt", specifier = "==0.24" },
     { name = "qfab", git = "https://github.com/qnl/qfab.git?branch=gdsfactory9" },
     { name = "scipy", specifier = ">=1.17.1" },
 ]
@@ -1549,7 +1549,7 @@ wheels = [
 
 [[package]]
 name = "pyaedt"
-version = "0.22.0"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "defusedxml" },
@@ -1562,9 +1562,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tomli-w" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1d/88/443979fee55f8a6aa78cf6f42422ded7aa6c31a556363f091c1ec0bd729f/pyaedt-0.22.0.tar.gz", hash = "sha256:5de3b7175db7c32b4ee6abcdc6ff62f58c37526cb81427728e2d668cd128adaf", size = 26863191, upload-time = "2025-11-05T19:13:03.435Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/87/c0a840ec0a911041960b4430d2d6c5c756857549af6666f02f4049490443/pyaedt-0.24.0.tar.gz", hash = "sha256:2f33b9415da27a8f401deb3fe5a9a70dce2af6da1c99f042686107aa19bb7c9e", size = 26758650, upload-time = "2026-01-10T08:32:08.499Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/65/c7893a3c99243a135000b653bdb0c0ec5919d38530f8f382c5c8d3a776d8/pyaedt-0.22.0-py3-none-any.whl", hash = "sha256:b711d2dddb799ed755871aceba1566622f65eefd250b612cef6589d29f44925e", size = 7645581, upload-time = "2025-11-05T19:13:00.327Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/ff/6fbee4e70c4818629714cbcccaa36a05e83c5d2e0ba7a5dae70ae2051b32/pyaedt-0.24.0-py3-none-any.whl", hash = "sha256:2519382db485d49d245a9b9b491473f48f3304d71a35948bba1e89a0d31730e8", size = 7713742, upload-time = "2026-01-10T08:32:05.664Z" },
 ]
 
 [[package]]

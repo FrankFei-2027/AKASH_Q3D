@@ -31,12 +31,15 @@ def idc_list_to_dict(x):
     }
 
 def one_procedure(IDC_parameters : list, N : float, cpw_parameters : list, target_capacitance: list, project_dir : list = "", project_name : str = "IDC.aedt", result_file_path : str = "all_results.csv") -> float | None:
-    gds_file_path="IDC.gds"
+    gds_file_path="IDC_nonpdk.gds"
 
     IDC_parameters = [N] + list(IDC_parameters)
     print(f'from main: {IDC_parameters}') # debug
 
     IDC_parameters_dict = idc_list_to_dict(IDC_parameters)
+    # print(f'IDC_parameters_dict: {IDC_parameters_dict}') # debug
+    #  {'N': 2, 'length': np.float64(100.0), 'width': np.float64(10.0), 'fgap': np.float64(10.0), 'ggap': np.float64(75.0), 'taper': np.float64(50.0)}
+    # exit()
     create_gds.generate_IDC(cpw_parameters, IDC_params=IDC_parameters_dict)
     result_capacitance = q3d_simulate.q3d_simulate(project_dir=project_dir, project_name=project_name, gds_file_path=gds_file_path, gds_parameters=IDC_parameters, result_file_path=result_file_path)
     
@@ -72,6 +75,18 @@ def main():
         x0 = [float(x) for x in parameters]
         N = x0.pop(0)
 
+    user_bounds = input('''Please input the bounds of the parameters in form (min, max) in the following order and seperate by space : length width fgap ggap taper: \n
+                        Enter to use default bounds: (0, 1000) (0, 1000) (0, 1000) (0, 1000) (0, 1000) \n''')
+    if user_bounds == "":
+        bounds = "(0, 1000) (0, 1000) (0, 1000) (0, 1000) (0, 1000)"
+    elif not len(user_bounds.strip().split(" ")) == 5:
+        print("number of bounds does not match. \n")
+        return
+    else:
+        bounds = []
+        for b in user_bounds.strip().split(" "):
+            min_val, max_val = map(float, b.strip("()").split(","))
+            bounds.append((min_val, max_val))
 
     user_capacitance = input("Please input target capacitance in order of 1_2 1_GND 2_GND in unit femtofarads (fF=1e-15F) and seperated by space. \n")
     target_capacitance = [float(x) * 1e-15 for x in user_capacitance.strip().split(" ")]# target_capacitance in unit F
@@ -124,7 +139,7 @@ def main():
     loss_value = float('inf')
     for current_N in N_values:
         args = (current_N, *fixed)
-        result = minimize(one_procedure, x0=x0, args=args, bounds=[(0, 1000), (0, 1000), (0, 1000), (0, 1000), (0, 1000)])
+        result = minimize(one_procedure, x0=x0, args=args, bounds=bounds)
         if result.fun < loss_value:
             final_result = [current_N, result]
             loss_value = result.fun
