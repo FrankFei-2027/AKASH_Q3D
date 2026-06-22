@@ -1,6 +1,7 @@
 '''
-Docstring for q3d_simulate
-2. q3d_simulate.py: This python file runs the simulation of ansys q3d and export the data to a csv file
+Ansys Q3D simulation functions.
+
+main.py starts the optimization script, and create_gds.py owns GDS generation.
 
 
 algorithm: 

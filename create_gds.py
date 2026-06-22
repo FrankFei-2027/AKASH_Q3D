@@ -1,9 +1,9 @@
-'''
-Docstring for create_gds
-1. create_gds.py: This python file creates the desired gds
+"""
+GDS generation functions for IDC layouts.
 
-
-'''
+main.py starts the optimization script, and q3d_simulate.py owns the
+Ansys Q3D simulation flow.
+"""
 
 import gdsfactory as gf
 import gdstk

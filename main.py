@@ -1,24 +1,32 @@
-'''
-The project need following files:
-1. create_gds.py: This python file creates the desired gds
-2. q3d_simulate.py: This python file runs the simulation of ansys q3d and export the data to a csv file
-3. main.py: This python file takes an initial set of parameters and automizes the iteration of the Q3D and find the desired parameters
+"""
+Entry point for IDC optimization.
 
-algorithm:
-    1. ask for input of the initial parameters and desired capacitance
-    2. use the function scipy.minimize to automize the parameters
-    3. output the target capacitance parameters
+File responsibilities:
+1. main.py starts the script and controls the optimization loop.
+2. create_gds.py contains GDS generation functions.
+3. q3d_simulate.py contains Ansys Q3D simulation functions.
 
-'''
+Algorithm:
+    1. Ask for the initial parameters and target capacitances.
+    2. Use scipy.minimize to optimize the geometry parameters.
+    3. Output the optimized IDC parameters.
+"""
 
 import os
 from scipy.optimize import minimize
 import create_gds
 import q3d_simulate
 
-def loss_function(current_capacitance : list, target_capacitance : list) -> float: 
-    result = (current_capacitance[0] - target_capacitance[0])**2 + (current_capacitance[1] - target_capacitance[1])**2 + (current_capacitance[2] - target_capacitance[2])**2
-    return result
+def loss_function(current_capacitance: list, target_capacitance: list) -> float:
+    if len(current_capacitance) != len(target_capacitance):
+        raise ValueError("current_capacitance and target_capacitance must have the same length.")
+    if any(target == 0 for target in target_capacitance):
+        raise ValueError("target capacitances must be non-zero for normalized loss.")
+
+    return sum(
+        ((current - target) / target) ** 2
+        for current, target in zip(current_capacitance, target_capacitance)
+    )
 
 def idc_list_to_dict(x):
     return {
@@ -78,7 +86,7 @@ def main():
     user_bounds = input('''Please input the bounds of the parameters in form (min, max) in the following order and seperate by space : length width fgap ggap taper: \n
                         Enter to use default bounds: (0, 1000) (0, 1000) (0, 1000) (0, 1000) (0, 1000) \n''')
     if user_bounds == "":
-        bounds = "(0, 1000) (0, 1000) (0, 1000) (0, 1000) (0, 1000)"
+        bounds = [(0, 1000)] * 5
     elif not len(user_bounds.strip().split(" ")) == 5:
         print("number of bounds does not match. \n")
         return
